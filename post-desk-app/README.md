@@ -23,6 +23,9 @@ Go to https://aistudio.google.com/apikey and create a key.
 
 Note: Google may use free-tier inputs to improve its models. Don't paste confidential client details.
 
+### 1b. Get a free Tavily key (for Discover)
+Go to https://app.tavily.com, sign up (no card), and copy your API key (starts with `tvly-`). Free plan: 1,000 searches a month. Each Discover run uses about 5.
+
 ### 2. Create the database
 1. Sign up at https://supabase.com and create a new project (free plan).
 2. Open **SQL Editor → New query**, paste everything from `supabase/schema.sql`, and press **Run**.
@@ -42,7 +45,7 @@ Open http://localhost:3000 and sign in with your `APP_PASSWORD`.
 1. Push this folder to a **private** GitHub repo.
 2. At https://vercel.com, **Add New → Project**, import the repo.
 3. Under **Environment Variables**, add the same values as `.env.local`:
-   `APP_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`.
+   `APP_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TAVILY_API_KEY`.
 4. Press **Deploy**. Bookmark the URL on your phone and laptop.
 
 ---

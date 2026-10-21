@@ -36,6 +36,17 @@ create table if not exists patterns (
   created_at timestamptz not null default now()
 );
 
+-- Topics the agent searches for viral posts (added later; safe to re-run).
+alter table profile add column if not exists topics text not null default '';
+
+-- Daily plan: what Discover found, saved once per day so reopening the app is free.
+create table if not exists plans (
+  day date primary key,
+  finds jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+alter table plans enable row level security;
+
 -- Only the server (service role key) talks to these tables.
 alter table profile enable row level security;
 alter table moments enable row level security;

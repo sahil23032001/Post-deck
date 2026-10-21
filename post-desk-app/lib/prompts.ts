@@ -20,11 +20,18 @@ export const DEFAULT_RULES = `STYLE
 - Never use: "game-changer", "leverage", "unlock", "excited to share", "humbled", "thrilled", "here's the thing", "let that sink in", em dashes, more than 3 hashtags, links in the post body.
 - Never invent facts, numbers or events. Use only what is given.`;
 
-export async function getProfile(): Promise<{ about: string; rules: string }> {
-  const { data } = await db().from("profile").select("about, rules").eq("id", 1).maybeSingle();
+export const DEFAULT_TOPICS = `AI product management
+conversational AI chatbots
+fintech product India
+travel tech product
+PM interviews and job hunting`;
+
+export async function getProfile(): Promise<{ about: string; rules: string; topics: string }> {
+  const { data } = await db().from("profile").select("*").eq("id", 1).maybeSingle();
   return {
     about: data?.about?.trim() ? data.about : DEFAULT_ABOUT,
     rules: data?.rules?.trim() ? data.rules : DEFAULT_RULES,
+    topics: data?.topics?.trim() ? data.topics : DEFAULT_TOPICS,
   };
 }
 

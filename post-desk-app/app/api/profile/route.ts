@@ -9,10 +9,14 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   if (!(await isAuthed())) return unauthorized();
-  const { about, rules } = await req.json();
-  const { error } = await db()
-    .from("profile")
-    .upsert({ id: 1, about: String(about || "").slice(0, 20000), rules: String(rules || "").slice(0, 10000), updated_at: new Date().toISOString() });
+  const { about, rules, topics } = await req.json();
+  const { error } = await db().from("profile").upsert({
+    id: 1,
+    about: String(about || "").slice(0, 20000),
+    rules: String(rules || "").slice(0, 10000),
+    topics: String(topics || "").slice(0, 2000),
+    updated_at: new Date().toISOString(),
+  });
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }
