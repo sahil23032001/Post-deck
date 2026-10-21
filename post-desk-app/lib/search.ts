@@ -3,7 +3,10 @@ import { AIError } from "./ai";
 
 export type SearchResult = { title: string; url: string; content: string; published_date?: string | null };
 
-export async function search(query: string, opts: { linkedinOnly?: boolean; max?: number } = {}): Promise<SearchResult[]> {
+export async function search(
+  query: string,
+  opts: { linkedinOnly?: boolean; max?: number; range?: "day" | "week"; news?: boolean } = {}
+): Promise<SearchResult[]> {
   const key = process.env.TAVILY_API_KEY;
   if (!key) throw new AIError("TAVILY_API_KEY is not set on the server. Add it to find posts.", 500);
 
@@ -12,7 +15,8 @@ export async function search(query: string, opts: { linkedinOnly?: boolean; max?
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       query,
-      time_range: "week",
+      time_range: opts.range ?? "week",
+      ...(opts.news ? { topic: "news" } : {}),
       search_depth: "basic",
       max_results: opts.max ?? 8,
       ...(opts.linkedinOnly ? { include_domains: ["linkedin.com"] } : {}),

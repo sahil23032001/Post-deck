@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-type Find = { title: string; url: string; summary: string; why_it_works: string; your_angle: string; hook: string };
+type Today = { topic: string; why_now: string; summary: string; your_angle: string; url: string; draft: string; window: string };
 type Pattern = { id: string; name: string; how: string };
 type Review = { score: number; verdict: string; fixes: string[]; better_hook: string };
 type Tab = "Plan" | "Create";
@@ -64,20 +64,21 @@ export default function Desk() {
   );
 }
 
-/* ---------- Plan: runs on open, once per day ---------- */
+/* ---------- Plan: today's one post, made when you open the app ---------- */
 function Plan({ create }: { create: (text: string, ref: string) => void }) {
-  const [finds, setFinds] = useState<Find[]>([]);
+  const [today, setToday] = useState<Today | null>(null);
+  const [shown, setShown] = useState<string[]>([]);
   const [busy, setBusy] = useState(true);
-  const [msg, setMsg] = useState<Note>({ text: "Loading today's plan…", err: false });
+  const [msg, setMsg] = useState<Note>({ text: "Loading today's post…", err: false });
   const started = useRef(false);
-  const days = nextPostDays();
 
-  async function discover() {
-    setBusy(true); setMsg({ text: "Finding this week's posts in your domain… (about 20 seconds)", err: false });
+  async function make(exclude: string[] = []) {
+    setBusy(true); setMsg({ text: "Finding today's hottest topic and writing your post… (about 30 seconds)", err: false });
     try {
-      const f = await send<Find[]>("/api/agent", { action: "discover" });
-      setFinds(f);
-      setMsg({ text: f.length ? "" : "Nothing found this week. Try broader topics in Settings.", err: false });
+      const t = await send<Today | null>("/api/agent", { action: "today", exclude });
+      setToday(t);
+      if (t?.url) setShown((s) => [...s, t.url]);
+      setMsg({ text: t ? "" : "Nothing new found. Try broader topics in Settings.", err: false });
     } catch (e) { setMsg({ text: (e as Error).message, err: true }); }
     finally { setBusy(false); }
   }
@@ -85,40 +86,51 @@ function Plan({ create }: { create: (text: string, ref: string) => void }) {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    api<{ finds: Find[] } | null>("/api/plan")
+    api<{ finds: Today[] } | null>("/api/plan")
       .then((plan) => {
-        if (plan?.finds?.length) { setFinds(plan.finds); setMsg({ text: "", err: false }); setBusy(false); }
-        else discover();
+        const t = plan?.finds?.[0];
+        if (t?.draft) { setToday(t); setShown([t.url]); setMsg({ text: "", err: false }); setBusy(false); }
+        else make();
       })
       .catch((e) => { setMsg({ text: (e as Error).message, err: true }); setBusy(false); });
   }, []);
+
+  const post = today ? postSection(today.draft) : "";
 
   return (
     <section className="list" style={{ gap: 16 }}>
       <div className="row between">
         <div style={{ display: "grid", gap: 4 }}>
           <span className="eyebrow">{new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</span>
-          <h2>Your posting plan</h2>
+          <h2>Today's post</h2>
         </div>
-        <button className="btn small" onClick={discover} disabled={busy}>Refresh</button>
+        <button className="btn small" onClick={() => make(shown)} disabled={busy}>Show me another</button>
       </div>
       <Msg msg={msg} />
 
-      <div className="list">
-        {finds.map((f, n) => (
-          <div key={n} className="panel" style={n < 2 ? { borderColor: "var(--accent)" } : undefined}>
-            <span className="chip">{n < 2 ? `Post on ${days[n]}` : "Backup idea"}</span>
-            <h3 style={{ fontSize: 17 }}>{f.hook}</h3>
-            <p className="placeholder">{f.your_angle}</p>
-            <p style={{ fontSize: 14 }}><b>Why it works:</b> {f.why_it_works}</p>
+      {today && (
+        <div className="grid">
+          <div className="panel">
+            <span className="chip">Hot {today.window === "this week" ? "this week" : "today"}</span>
+            <h3 style={{ fontSize: 18 }}>{today.topic}</h3>
+            <p className="placeholder">{today.why_now}</p>
+            <p style={{ fontSize: 14 }}><b>Your angle:</b> {today.your_angle}</p>
+            {today.url && <a className="btn small" style={{ justifySelf: "start" }} href={today.url} target="_blank" rel="noopener noreferrer">See the source</a>}
+          </div>
+          <div className="panel">
+            <span className="eyebrow">Ready to post</span>
+            <div className="out">{post}</div>
             <div className="row">
-              <button className="btn primary" onClick={() =>
-                create(f.your_angle, `${f.summary} Technique: ${f.why_it_works} Suggested opening: ${f.hook}`)}>Write this post</button>
-              {f.url && <a className="btn small" href={f.url} target="_blank" rel="noopener noreferrer">See what inspired it</a>}
+              <button className="btn primary" onClick={async () => {
+                await navigator.clipboard?.writeText(post).catch(() => {});
+                window.open("https://www.linkedin.com/feed/", "_blank", "noopener");
+                setMsg({ text: "Copied. On LinkedIn, click Start a post and paste.", err: false });
+              }}>Copy & open LinkedIn</button>
+              <button className="btn" onClick={() => create(today.your_angle, `${today.topic}. ${today.summary}`)}>Edit in Create</button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
